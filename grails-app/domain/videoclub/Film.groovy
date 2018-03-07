@@ -2,7 +2,7 @@ package videoclub
 
 class Film {
 
-    String title
+    String title2
     Integer year
     Date publishDate
     Boolean availability =  true
