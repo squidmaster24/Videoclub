@@ -113,25 +113,22 @@ class MovieBookingController {
         if (!film.availability) {
             MovieBooking movieBooking = MovieBooking.findByFilmAndReturnDateGreaterThan(film, new Date())
 
-            movieBooking.days
-
-            = new Date()
-            use(TimeCategory) {
-                movieBooking.returnDate = movieBooking.bookingDate + days.days
-
-            movieBooking.days =
-            movieBooking.price =
-//            movieBooking.bookingDate =
             movieBooking.returnDate = new Date()
-//
-            try {
-                movieBookingService.unbook(movieBooking)
-            } catch (ValidationException e) {
-                respond movieBooking.errors, view: 'create'
-                return
-            }
+            movieBooking.days = TimeCategory.minus(movieBooking.returnDate, movieBooking.bookingDate).days
+            movieBooking.price = movieBooking.days * FILM_PRICE
+//            movieBooking.bookingDate =
 
-            film.availability = true
+//            try {
+//                movieBookingService.unbook(movieBooking)
+//            } catch (ValidationException e) {
+//                respond movieBooking.errors, view: 'create'
+//                return
+//            }
+
+                    film.availability = true
+
+//            movieBooking.days =
+            movieBookingService.save(movieBooking)
             filmService.save(film)
             flash.message = "Su reserva ha sido cancelada"
             redirect(controller: "film")
