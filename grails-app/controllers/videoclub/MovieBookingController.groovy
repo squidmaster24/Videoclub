@@ -1,6 +1,7 @@
 package videoclub
 
 import grails.validation.ValidationException
+import groovy.time.TimeCategory
 import videoclub.web.command.BookingCommand
 
 import static org.springframework.http.HttpStatus.*
@@ -16,7 +17,7 @@ class MovieBookingController {
 
     def index(Integer max) {
         params.max = Math.min(max ?: 10, 100)
-        respond movieBookingService.list(params), model:[movieBookingCount: movieBookingService.count()]
+        respond movieBookingService.list(params), model: [movieBookingCount: movieBookingService.count()]
     }
 
     def show(Long id) {
@@ -25,51 +26,50 @@ class MovieBookingController {
 
     def create(Long filmId) {
         Film film = Film.get(filmId)
-        if (!film || !film.availability){
-            [film:film]
-        }else{
-            [bookingCommand: new BookingCommand(), film:film]
+//        if (!film || !film.availability){
+        if (!film) {
+            [bookingCommand: new BookingCommand(film: film)]
+        } else {
+            [bookingCommand: new BookingCommand(film: film)]
         }
     }
 
     def save(BookingCommand bookingCommand) {
 
-
-        if (bookingCommand.hasErrors()){
-            render (view:"/movieBooking/create", model: [bookingCommand: bookingCommand, film:bookingCommand.film])
+        if (bookingCommand.hasErrors()) {
+            render(view: "/movieBooking/create", model: [bookingCommand: bookingCommand])
             return
         }
 
         Film film = bookingCommand.film
         Integer days = bookingCommand.days
 
-        if (film.availability){
+        if (film.availability) {
 
             MovieBooking movieBooking = new MovieBooking()
             movieBooking.film = film
             movieBooking.days = days
-            movieBooking.price = movieBooking.days*FILM_PRICE
+            movieBooking.price = movieBooking.days * FILM_PRICE
+            movieBooking.bookingDate = new Date()
+            use(TimeCategory) {
+                movieBooking.returnDate = movieBooking.bookingDate + days.days
+            }
+//
+            try {
+                movieBookingService.save(movieBooking)
+            } catch (ValidationException e) {
+                respond movieBooking.errors, view: 'create'
+                return
+            }
 
-                try {
-                    movieBookingService.save(movieBooking)
-                } catch (ValidationException e) {
-                    respond movieBooking.errors, view:'create'
-                    return
-                }
-
-                film.availability = false
-                filmService.save(film)
-                flash.message = "Bien!! Has reservado"
-                redirect (controller:"film")
+            film.availability = false
+            filmService.save(film)
+            flash.message = "Bien!! Has reservado"
+            redirect(controller: "film")
+        } else {
+            flash.message = "Película no disponible"
+            redirect(controller: "film")
         }
-
-        else{
-            flash.error = "Película no disponible"
-            redirect (controller: "")
-        }
-
-
-
 
 //        request.withFormat {
 //            form multipartForm {
@@ -104,33 +104,63 @@ class MovieBookingController {
 //            }
 //            '*'{ respond movieBooking, [status: OK] }
 //        }
-//    }
 
 
-    def delete(Long id) {
-        if (id == null) {
-            notFound()
-            return
-        }
 
-        movieBookingService.delete(id)
+    def unbook(Long filmId) {
+        Film film = Film.get(filmId)
 
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.deleted.message', args: [message(code: 'movieBooking.label', default: 'MovieBooking'), id])
-                redirect action:"index", method:"GET"
+        if (!film.availability) {
+            MovieBooking movieBooking = MovieBooking.findByFilmAndReturnDateGreaterThan(film, new Date())
+
+            movieBooking.days
+
+            = new Date()
+            use(TimeCategory) {
+                movieBooking.returnDate = movieBooking.bookingDate + days.days
+
+            movieBooking.days =
+            movieBooking.price =
+//            movieBooking.bookingDate =
+            movieBooking.returnDate = new Date()
+//
+            try {
+                movieBookingService.unbook(movieBooking)
+            } catch (ValidationException e) {
+                respond movieBooking.errors, view: 'create'
+                return
             }
-            '*'{ render status: NO_CONTENT }
+
+            film.availability = true
+            filmService.save(film)
+            flash.message = "Su reserva ha sido cancelada"
+            redirect(controller: "film")
+
+//        if (id == null) {
+//            notFound()
+//            return1
+//        }
+//
+//        movieBookingService.unbook(id)
+//
+//        request.withFormat {
+//            form multipartForm {
+//                flash.message = message(code: 'default.deleted.message', args: [message(code: 'movieBooking.label', default: 'MovieBooking'), id])
+//                redirect action:"index", method:"GET"
+//            }
+//            '*'{ render status: NO_CONTENT }
+//        }
         }
     }
 
-    protected void notFound() {
-        request.withFormat {
-            form multipartForm {
-                flash.message = message(code: 'default.not.found.message', args: [message(code: 'movieBooking.label', default: 'MovieBooking'), params.id])
-                redirect action: "index", method: "GET"
+
+        protected void notFound() {
+            request.withFormat {
+                form multipartForm {
+                    flash.message = message(code: 'default.not.found.message', args: [message(code: 'movieBooking.label', default: 'MovieBooking'), params.id])
+                    redirect action: "index", method: "GET"
+                }
+                '*' { render status: NOT_FOUND }
             }
-            '*'{ render status: NOT_FOUND }
         }
-    }
 }

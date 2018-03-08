@@ -9,25 +9,31 @@
 
         <fieldset>
         <div class="fieldcontain">
-            <label>Film</label>${film.title}
+            <label>Film</label>${bookingCommand.film.title}
         </div>
 
-            <input type="hidden" name="film.id" value="${film.id}"/>
+            <input type="hidden" name="film.id" value="${bookingCommand.film.id}"/>
             <div class="fieldcontain">
                 <label for="days">Días de alquiler</label>
 
-                <input type="text" name="days" value="" required="" id="days">
+                <input type="text" name="days" value="${bookingCommand.days}" required="" id="days">
 
             </div>
 
             </div><div class="fieldcontain">
-                <label>Availability</label>${film.availability}
+                <label>Availability</label>${bookingCommand.film.availability}
             </div>
 
         </fieldset>
 
+
         <fieldset class="buttons">
-            <input type="submit" name="save" class="save" value="Reservar" id="save">
+            <g:if test="${bookingCommand.film.availability}">
+                <input type="submit" name="save" class="save" value="Reservar" id="save">
+            </g:if>
+            <g:else>
+                <input type="submit" name="unbook" class="unbook" value="Cancelar reserva" id="unbook">
+            </g:else>
         </fieldset>
 
         </g:form>

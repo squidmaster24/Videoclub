@@ -3,7 +3,7 @@ package videoclub
 class BootStrap {
 
     def init = { servletContext ->
-        new Film(year:2007, title:"The man from earth").save()
+        new Film(year:2007, title:"The man from earth",availability: false).save()
         new Film(year:2003, title:"Identity").save()
         new Film(year:1997, title:"La princesa Mononoke").save()
         new Film(year:2016, title:"Captain Fantastic").save()
